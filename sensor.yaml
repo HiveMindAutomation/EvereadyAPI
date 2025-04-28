@@ -1,0 +1,346 @@
+# Eveready Energy Vault – RESTful sensors for all battery JSON data fields
+# Each sensor pulls one JSON key from the battery's API response.
+# Source: Eveready Energy Vault JSON API (Battery Data).
+# Ensure the REST endpoint and any required headers/auth are configured appropriately.
+sensor:
+  - platform: rest
+    name: "Eveready Backup Load Power"
+    resource: !secret eveready_url  # Replace with actual API endpoint
+    value_template: "{{ value_json.backupLoadPower }}"
+    unit_of_measurement: "W"
+    device_class: power          # Represents power measurement in watts
+    state_class: measurement     # Current value measurement
+    # Instantaneous power being supplied to **backup** (emergency) loads.
+    # Units: Watts (W), as a floating-point number.
+    # Description: Power draw on backup/essential circuits. Typically 0 W when no backup load is active.
+    # Only non-zero if the battery is powering designated backup loads during an outage or in off-grid mode.
+
+  - platform: rest
+    name: "Eveready Battery Capacity"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.batCapcity }}"
+    # Note: The JSON key is 'batCapcity' (spelling as given by API).
+    unit_of_measurement: "Ah"
+    # Total battery capacity (likely in ampere-hours).
+    # Units: Ampere-hour (Ah). Value type: number.
+    # Description: The nominal storage capacity of the battery bank. 
+    # Interpretation: For example, 300.00 Ah could indicate the battery’s total charge capacity (e.g., combined capacity of modules).
+
+  - platform: rest
+    name: "Eveready Battery to Load Direction"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.batConsumpDirection }}"
+    # Flag indicating if the battery is supplying power to home loads.
+    # Units: N/A (Boolean flag represented as 0/1).
+    # Value: 0 or 1 (integer).
+    # Mappings: 1 = Battery discharging to home (providing power to loads); 0 = Battery not supplying loads (i.e., either idle or not discharging to loads).
+    # Description: This status is 1 when the battery is actively powering the house loads, and 0 when it is not. Use in conjunction with 'Battery to Load Power'.
+
+  - platform: rest
+    name: "Eveready Battery to Load Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.batConsumpPower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Battery power output to home loads.
+    # Units: Watts (W). Value type: number (float).
+    # Description: Instantaneous power (W) the battery is delivering to the household loads. 
+    # If this value is >0, the battery is discharging to support the home’s electricity demand.
+
+  - platform: rest
+    name: "Eveready Battery Current"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.batCurr }}"
+    unit_of_measurement: "A"
+    device_class: current
+    state_class: measurement
+    # Battery current.
+    # Units: Amperes (A). Value type: number.
+    # Description: The instantaneous current flowing into or out of the battery. Positive vs negative convention depends on the system (e.g., positive may indicate discharge, negative indicates charging).
+    # Interpretation: A value of 0.00 A means no current flow (battery idle). If negative values are provided by the API for charging, they indicate charging current (battery being charged) [oai_citation:1‡configuration1502.rssing.com](https://configuration1502.rssing.com/chan-75340262/article93790.html#:~:text=,%E2%80%9Ctype%E2%80%9D%3A2%2C%E2%80%9Cstatus%E2%80%9D%3A%E2%80%9Csucce). Otherwise, use direction flags to determine charge vs discharge.
+
+  - platform: rest
+    name: "Eveready Battery State of Charge"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.batEnergyPercent }}"
+    unit_of_measurement: "%"
+    device_class: battery        # Battery charge level percentage
+    state_class: measurement
+    # Battery State of Charge (SoC) [oai_citation:2‡en.wikipedia.org](https://en.wikipedia.org/wiki/State_of_charge#:~:text=State%20of%20charge%20,of%20state%20of%20charge%20during).
+    # Units: Percentage (%). Value type: number.
+    # Description: The remaining charge in the battery, as a percentage of full capacity (0% = empty, 100% = full) [oai_citation:3‡en.wikipedia.org](https://en.wikipedia.org/wiki/State_of_charge#:~:text=State%20of%20charge%20,of%20state%20of%20charge%20during). For example, 94.00 means the battery is at 94% charge.
+
+  - platform: rest
+    name: "Eveready Battery to Grid Direction"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.batGridDirection }}"
+    # Flag indicating if the battery is feeding power to the grid.
+    # Units: N/A (flag 0/1).
+    # Mappings: 1 = Battery discharging to grid (exporting power to grid); 0 = Battery not exporting to grid.
+    # Description: This is 1 when the battery is sending power back to the grid (e.g., during surplus discharge or VPP feed-in), and 0 otherwise.
+
+  - platform: rest
+    name: "Eveready Battery to Grid Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.batGridPower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Battery power output to the grid.
+    # Units: Watts (W). Value type: number.
+    # Description: Instantaneous power the battery is exporting to the utility grid. A non-zero value means the battery is discharging into the grid (e.g., selling power or supporting grid).
+
+  - platform: rest
+    name: "Eveready Battery Direction"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.batteryDirection }}"
+    # Overall battery flow direction state.
+    # Units: N/A (0/1 indicator).
+    # Mappings: 0 = Battery in charge/idle mode (no output), 1 = Battery in discharge/output mode.
+    # Description: Indicates the primary direction of energy flow for the battery. When 1, the battery is actively discharging (providing power out). When 0, the battery is not outputting power (either charging or idle).
+
+  - platform: rest
+    name: "Eveready Battery Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.batteryPower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Battery output power (aggregate).
+    # Units: Watts (W). Value type: number.
+    # Description: Net instantaneous power from the battery. This typically represents the total discharge power (battery output to all destinations). 
+    # Interpretation: For example, if the battery is supplying 500 W to loads and 200 W to grid, batteryPower might report ~700 W. If the battery is charging (input), this value may be 0 while separate charge fields are used (see PV/Grid Charge Power).
+
+  - platform: rest
+    name: "Eveready Data Timestamp"
+    resource: !secret eveready_url
+    value_template: "{{ (value_json.dataTime | int / 1000) | timestamp_local }}"
+    device_class: timestamp
+    # Timestamp of data reading (localized).
+    # Units: Date/Time. Value type: string (ISO formatted timestamp).
+    # Description: The timestamp when the data was measured, converted to a human-readable local date/time. 
+    # Formatting: The raw value is an epoch time in milliseconds; here it’s divided by 1000 and passed through Home Assistant’s `timestamp_local` filter [oai_citation:4‡home-assistant.io](https://www.home-assistant.io/docs/configuration/templating/#:~:text=,instead) to show the local date/time.
+
+  - platform: rest
+    name: "Eveready Grid Charge Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.gridChargePower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Grid charging power.
+    # Units: Watts (W). Value type: number.
+    # Description: Instantaneous power drawn from the grid to charge the battery. A value >0 means the battery is being charged from the grid (importing power to the battery). This is typically non-zero if the system is configured to charge the battery from grid (e.g., during off-peak hours).
+
+  - platform: rest
+    name: "Eveready Grid Consumption Direction"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.gridConsumpDirection }}"
+    # Flag indicating if grid power is being consumed by the home.
+    # Units: N/A (0/1 flag).
+    # Mappings: 1 = Home consuming power from the grid; 0 = Not consuming from grid.
+    # Description: Shows whether the household is drawing power from the grid at that moment. 1 means the home/load is using grid electricity, 0 means it is not (either relying on PV/battery or exporting to grid instead).
+
+  - platform: rest
+    name: "Eveready Grid Consumption Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.gridConsumpPower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Grid power being consumed by loads.
+    # Units: Watts (W). Value type: number.
+    ## Description: Instantaneous power that the home is importing from the grid to supply loads. 
+    ## A higher value indicates the home is drawing that many watts from the grid to meet demand (usually when solar/battery are insufficient). 
+    ## 0 W means no grid import.
+
+  - platform: rest
+    name: "Eveready Grid Direction"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.gridDirection }}"
+    # Net grid flow direction indicator.
+    # Units: N/A (0/1 indicator).
+    # Mappings: 0 = Import mode (grid supplying power to home/battery), 1 = Export mode (grid receiving power from home).
+    # Description: Indicates the overall direction of power flow with the utility grid. When 1, the system is sending power out to the grid (exporting); when 0, the system is pulling power in from the grid (importing). For example, 1 would correspond to times when solar/battery surplus is feeding into the grid.
+
+  - platform: rest
+    name: "Eveready Grid Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.gridPower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Net grid power flow.
+    # Units: Watts (W). Value type: number.
+    # Description: The magnitude of instantaneous power exchange with the grid. This value represents the amount of power either drawn from or sent to the grid. Use the Grid Direction sensor to determine direction (import vs export). For example, a reading of 400 W with Grid Direction = 1 means 400 W is being exported to the grid; if Grid Direction = 0, 400 W would be imported from the grid.
+
+  - platform: rest
+    name: "Eveready Input/Output Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.inputOutputPower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Battery system input/output power.
+    # Units: Watts (W). Value type: number.
+    # Description: Net power flowing into or out of the battery system (possibly at the inverter AC connection). This may reflect the battery’s overall charge/discharge rate. In practice, this might mirror the Battery Power value for discharging, and could be zero or negative when charging. (If negative values are used by the API, negative would indicate charging power flowing into the battery).
+
+  - platform: rest
+    name: "Eveready Alarm Status"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.isAlarm }}"
+    # Battery alarm status flag.
+    # Units: N/A (0/1 flag).
+    # Mappings: 0 = No alarm, 1 = Alarm active.
+    # Description: Indicates if there is any active alarm or fault condition on the battery system. Normally 0 (no alarms). If it shows 1, the system has detected a fault or alarm condition that may require attention.
+
+  - platform: rest
+    name: "Eveready Online Status"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.isOnline }}"
+    # Device connectivity/online status.
+    # Units: N/A (0/1 flag).
+    # Mappings: 0 = Offline, 1 = Online.
+    # Description: Shows whether the battery system is currently online (communicating and active). A value of 1 means the device is online and reporting data; 0 means it’s offline or not communicating.
+
+  - platform: rest
+    name: "Eveready Data Mark"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.mark }}"
+    # Data mark/flag (purpose unspecified).
+    # Units: N/A (numeric code).
+    # Description: An unspecified marker field from the API. In the data, `mark` appears as a numeric code (e.g., 1). Its exact meaning isn’t documented; it might be a static flag or a marker for data freshness. (This field is included for completeness.)
+
+  - platform: rest
+    name: "Eveready Output Direction"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.outPutDirection }}"
+    # Overall output direction mode.
+    # Units: N/A (0/1 flag).
+    # Mappings: 0 = Input mode (system absorbing power), 1 = Output mode (system supplying power).
+    # Description: A high-level indicator of whether the battery system is outputting power to the home/grid (1) or not (0). This could be interpreted as 1 when the system is in discharge mode (providing power to loads or grid), and 0 when the system is in net charge mode (absorbing power, e.g., charging the battery). It complements the more specific direction flags.
+
+  - platform: rest
+    name: "Eveready PV Charge Direction"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.pvChargeDirection }}"
+    # Flag indicating if solar PV is charging the battery.
+    # Units: N/A (0/1 flag).
+    # Mappings: 1 = PV charging battery, 0 = PV not charging battery.
+    # Description: Shows whether solar power is currently being used to charge the battery. When 1, a portion of solar generation is flowing into the battery (and PV Charge Power will show a value). When 0, no solar energy is charging the battery at that moment.
+
+  - platform: rest
+    name: "Eveready PV Charge Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.pvChargePower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Solar PV -> Battery charge power.
+    # Units: Watts (W). Value type: number.
+    # Description: Instantaneous power from solar panels being used to charge the battery. This is the portion of solar generation (PV) currently going into the battery. A non-zero value means the battery is actively being charged by PV at that wattage.
+
+  - platform: rest
+    name: "Eveready PV Consumption Direction"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.pvConsumpDirection }}"
+    # Flag indicating if solar PV is powering loads.
+    # Units: N/A (0/1 flag).
+    # Mappings: 1 = PV supplying home loads, 0 = PV not supplying loads.
+    # Description: Indicates whether solar generation is currently being consumed by the home. When 1, some/all PV power is feeding the house loads (see PV Consumption Power). When 0, none of the PV is going directly to loads (e.g., at night or all PV is diverted elsewhere).
+
+  - platform: rest
+    name: "Eveready PV Consumption Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.pvConsumpPower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Solar PV power consumed by the home.
+    # Units: Watts (W). Value type: number.
+    # Description: Instantaneous power from solar that is being used to directly power the house’s loads. This is the portion of PV generation currently consumed on-site (not exported or stored). For example, 300 W means 300 W of solar is being used by appliances at that moment.
+
+  - platform: rest
+    name: "Eveready PV Direction"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.pvDirection }}"
+    # Solar PV production status flag.
+    # Units: N/A (0/1 flag).
+    # Mappings: 1 = PV producing (active), 0 = PV not producing.
+    # Description: A simple indicator of whether the solar PV system is generating power. 1 means PV panels are generating (sunlight available), 0 means no generation (e.g., at night). Typically 1 if `pvPower` is above 0.
+
+  - platform: rest
+    name: "Eveready PV to Grid Direction"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.pvGridDirection }}"
+    # Flag indicating if solar PV is exporting to grid.
+    # Units: N/A (0/1 flag).
+    # Mappings: 1 = PV sending power to grid, 0 = PV not sending to grid.
+    # Description: Indicates whether a portion of solar generation is being exported to the utility grid. 1 means yes – solar power is feeding into the grid (see PV to Grid Power for amount). 0 means no PV power is going to the grid (either because PV output is low or all is used on-site/battery).
+
+  - platform: rest
+    name: "Eveready PV to Grid Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.pvGridPower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Solar PV power exported to grid.
+    # Units: Watts (W). Value type: number.
+    # Description: Instantaneous power from solar panels that is being fed into the grid. This is the portion of PV generation not used by the home or battery, and thus exported. For example, 400 W indicates that 400 W of solar power is currently flowing out to the grid.
+
+  - platform: rest
+    name: "Eveready PV Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.pvPower }}"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    # Total solar PV generation power (instantaneous).
+    # Units: Watts (W). Value type: number.
+    # Description: The total real-time power output from the solar PV system. This is the sum of solar power being used by the home, charging the battery, and/or exported to the grid. For example, 700 W means the panels are producing 700 W in total at that moment.
+
+  - platform: rest
+    name: "Eveready Running State"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.runningState }}"
+    # Battery system running state code.
+    # Units: N/A (numeric code).
+    # Description: Operating state of the battery system (mode indicator). This may be an internal status code. A value of 1 often indicates “Running/Active” state. Other possible codes (if any) are not documented, but could include 0 for standby or other numbers for specific modes. (In the example data, runningState was 1, indicating normal operation.)
+
+  - platform: rest
+    name: "Eveready Solar Power"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.solarPower }}"
+    unit_of_measurement: "kWh"    # Assuming this represents an energy total (see below)
+    device_class: energy
+    state_class: total_increasing
+    # Total solar energy (possibly today’s generation).
+    # Units: *Possibly* kilowatt-hours (kWh). Value type: number.
+    # Description: Despite the name 'solarPower', the value appears to be an energy measure. For example, a value of 4.50 in context of PV power 700 W likely indicates 4.50 kWh generated (perhaps cumulative for the day). This sensor represents total solar production (likely for the current day or period). If it indeed reflects energy, it should be treated as an increasing total (hence device_class: energy). 
+
+  - platform: rest
+    name: "Eveready API Status"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.status }}"
+    # API response status.
+    # Units: N/A (string).
+    # Description: Status message from the API response. Typically `"success"` if data was retrieved successfully [oai_citation:5‡configuration1502.rssing.com](https://configuration1502.rssing.com/chan-75340262/article93790.html#:~:text=tteryDirection%E2%80%9D%3A0%2C%E2%80%9CbatConsumpDirection%E2%80%9D%3A0%2C%E2%80%9CbatGridDirection%E2%80%9D%3A0%2C%E2%80%9CoutPutDirection%E2%80%9D%20%3A1%2C%E2%80%9CdataTime%E2%80%9D%3A1729416480000%2C%E2%80%9CupdateDate%E2%80%9D%3A1729405673000). This can be used to verify that the data fetch was successful (expected value is "success"). Any other value might indicate an error or different status.
+
+  - platform: rest
+    name: "Eveready Response Type"
+    resource: !secret eveready_url
+    value_template: "{{ value_json.type }}"
+    # API response type/code.
+    # Units: N/A (integer).
+    # Description: A numeric code indicating the type of response or device. In the example, `type` is 2 [oai_citation:6‡configuration1502.rssing.com](https://configuration1502.rssing.com/chan-75340262/article93790.html#:~:text=tteryDirection%E2%80%9D%3A0%2C%E2%80%9CbatConsumpDirection%E2%80%9D%3A0%2C%E2%80%9CbatGridDirection%E2%80%9D%3A0%2C%E2%80%9CoutPutDirection%E2%80%9D%20%3A1%2C%E2%80%9CdataTime%E2%80%9D%3A1729416480000%2C%E2%80%9CupdateDate%E2%80%9D%3A1729405673000), which likely corresponds to the type of device (e.g., 2 might represent a battery system). This value is generally static and included for completeness.
+    
+  - platform: rest
+    name: "Eveready Last Update Timestamp"
+    resource: !secret eveready_url
+    value_template: "{{ (value_json.updateDate | int / 1000) | timestamp_local }}"
+    device_class: timestamp
+    # Last update time (localized).
+    # Units: Date/Time.
+    # Description: The timestamp of the last data update (as reported by the system), converted to local readable time. This might indicate when the system last sent data to the portal or updated its internal record. It’s formatted via template (epoch milliseconds to local time) similar to dataTime.
